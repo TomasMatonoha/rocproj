@@ -8,7 +8,7 @@ class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
 
   @override
-  _CameraScreenState createState() => _CameraScreenState();
+  State<CameraScreen> createState() => _CameraScreenState();
 }
 
 class _CameraScreenState extends State<CameraScreen> {
@@ -24,7 +24,7 @@ class _CameraScreenState extends State<CameraScreen> {
       cameras = availableCameras;
       if (cameras!.isNotEmpty) {
         controller = CameraController(
-          cameras![0], 
+          cameras![0],
           ResolutionPreset.high,
           enableAudio: false, // No audio access
         );
@@ -57,7 +57,6 @@ class _CameraScreenState extends State<CameraScreen> {
     controller?.dispose();
     super.dispose();
   }
-  
 
   Future<void> takePicture() async {
     if (controller == null || !controller!.value.isInitialized) {
@@ -65,7 +64,7 @@ class _CameraScreenState extends State<CameraScreen> {
       return;
     }
     try {
-      // Get the temporary directory
+      // Get temporary directory
       final directory = await getTemporaryDirectory();
       // Create file path
       final path = join(directory.path, '${DateTime.now().millisecondsSinceEpoch}.png');

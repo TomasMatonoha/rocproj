@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'camera_screen.dart';
-import 'gallery_screen.dart';
+import 'homepage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
@@ -30,43 +29,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Camera Gallery App'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CameraScreen()),
-                );
-              },
-              child: Text('Camera'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => GalleryScreen()),
-                );
-              },
-              child: Text('Gallery'),
-            ),
-          ],
-        ),
-      ),
+      home: const MyHomePage(),
     );
   }
 }

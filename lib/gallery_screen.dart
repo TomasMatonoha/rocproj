@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' show BuildContext;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -10,7 +9,7 @@ class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
 
   @override
-  _GalleryScreenState createState() => _GalleryScreenState();
+  State<GalleryScreen> createState() => _GalleryScreenState();
 }
 
 class _GalleryScreenState extends State<GalleryScreen> {
@@ -37,13 +36,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   void _deleteSelected() async {
-    // Delete the files
+    // Delete files
     for (int index in selectedIndices) {
       await images![index].delete();
       logger.d('Deleted ${images![index].path}');
     }
-    
-    // Remove from the list
+
+    // Remove from list
     setState(() {
       List<File> remainingImages = [];
       for (int i = 0; i < images!.length; i++) {
