@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'camera_screen.dart';
-import 'gallery_screen.dart';
+import 'camera/camera_screen.dart';
+import 'gallery/gallery_screen.dart';
 
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
