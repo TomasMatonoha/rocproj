@@ -1,14 +1,17 @@
 import 'package:image/image.dart' as img;
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'dart:math' as math;
 import 'package:logger/logger.dart';
 
 class ImageProcessor {
-  static const int maxDimension = 1080;
-  static const int minDimension = 100;
-  img.Image? image;
+  static const int maxDimension = 2080;
+  static const int minDimension = 500;
+  late img.Image? image;
   late String path;
+  late File editedOcrFile;
+  late img.Image? originalImage;
   Logger logger = Logger();
 
   Future<void> loadImage(String imagePath) async {
@@ -16,8 +19,8 @@ class ImageProcessor {
     final bytes = await file.readAsBytes();
     image = img.decodeImage(bytes);
     path = imagePath;
-    logger.i(image);
-    
+    originalImage = img.copyResize(image!, width: image!.width, height: image!.height);
+    logger.d('IMGPROC: Loaded image $image from $path');
   }
 
   bool enforceSizeLimits() {
@@ -30,12 +33,12 @@ class ImageProcessor {
       width = (width * scale).round();
       height = (height * scale).round();
       image = img.copyResize(image!, width: width, height: height);
-      logger.i('Resized image to $width x $height');
+      logger.d('IMGPROC: Resized image to $width x $height');
       return true;
     }
     // image too small - reject
     if (width < minDimension || height < minDimension) {
-      logger.i('Image too small');
+      logger.e('IMGPROC: Image $path too small');
       return false;
     }
     return true;
@@ -76,13 +79,26 @@ class ImageProcessor {
     reduceNoise();
     convertToGrayscale();
     reduceNoise();
-    logger.i('Optimized image for OCR');
+    logger.d('IMPROC: Optimized image for OCR');
   }
 
   Future<void> save() async {
+    final dirname = p.dirname(path);
+    final filename = p.basename(path);
+    await Directory('$dirname/OCR-Edited').create();
     final bytes = img.encodeJpg(image!);
-    await File(path).writeAsBytes(bytes);
-    logger.i('Saved image to $path');
+    // editedOcrFile = '$dirname/OCR-Edited/e-$filename';
+    editedOcrFile = File('$dirname/OCR-Edited/e-$filename');
+    await editedOcrFile.writeAsBytes(bytes);
+    logger.d('IMPROC: Saved image $image to ${editedOcrFile.path}');
+  }
+
+  Future<void> dispose() async {
+    image = null;
+    path = '';
+    editedOcrFile.delete();
+    originalImage = null;
+    logger.d('IMPROC: Image processor disposed');
   }
 }
 
@@ -93,17 +109,18 @@ class Ocr {
   Future<String> extractText(String imagePath) async {
     try {
       final inputImage = InputImage.fromFilePath(imagePath);
-      final RecognizedText recognizedText = await textDetector.processImage(inputImage);
+      final RecognizedText recognizedText =
+          await textDetector.processImage(inputImage);
       String text = '';
       for (TextBlock block in recognizedText.blocks) {
-        text += '${block.text}\n';
+         text += '${block.text}\n';
         /* for (TextLine line in block.lines) {
           text += '${line.text}\n';
         } */
       }
       // return _postProcessText(text);
-      logger.i('OCR text: $text');
-      return text;
+      logger.d('OCR text: \n$text');
+      return text != '' ? text : 'No text found';
     } catch (e) {
       logger.e('OCR error: $e');
       return '';
@@ -120,6 +137,6 @@ class Ocr {
 
   Future<void> dispose() async {
     await textDetector.close();
-    logger.i('Text detector closed');
+    logger.d('Text detector disposed');
   }
 }

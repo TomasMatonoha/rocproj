@@ -26,7 +26,7 @@ class _CameraScreenState extends State<CameraScreen> {
         controller = CameraController(
           cameras![0],
           ResolutionPreset.high,
-          enableAudio: false, // No audio access
+          enableAudio: false,
         );
         controller!.initialize().then((_) {
           if (!mounted) {
@@ -64,24 +64,19 @@ class _CameraScreenState extends State<CameraScreen> {
       return;
     }
     try {
-      // Get temporary directory
       final directory = await getTemporaryDirectory();
-      // Create file path
-      final path = join(directory.path, '${DateTime.now().millisecondsSinceEpoch}.png');
-      // Take picture
+      final path = join(directory.path,
+          'appCam-${DateTime.now().millisecond}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.png');
       final XFile picture = await controller!.takePicture();
-      // Save the picture to path
       await picture.saveTo(path);
-      // Log the picture path
-      logger.i('Picture saved to $path');
+      logger.d('Picture saved to $path');
     } catch (e) {
-      // Log arrors
       logger.e('Error taking picture: $e');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(context) {
     if (_cameraError) {
       return Scaffold(
         appBar: AppBar(
@@ -99,9 +94,13 @@ class _CameraScreenState extends State<CameraScreen> {
       appBar: AppBar(
         title: Text('Take a Picture'),
       ),
-      body: CameraPreview(controller!),
+      body: Center(
+        child: CameraPreview(controller!),
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: takePicture,
+        onPressed: () async {
+          await takePicture();
+        },
         child: Icon(Icons.camera),
       ),
     );

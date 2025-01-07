@@ -1,4 +1,4 @@
-import 'package:dev1/gallery/type_select_screen.dart';
+import 'package:dev1/gallery/export_select_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -10,38 +10,60 @@ class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
 
   @override
-  State<GalleryScreen> createState() => _GalleryScreenState();
+  State<GalleryScreen> createState() => GalleryScreenState();
 }
 
-class _GalleryScreenState extends State<GalleryScreen> {
+class GalleryScreenState extends State<GalleryScreen>
+    with TickerProviderStateMixin {
   List<File>? images = [];
   Set<int> selectedIndices = {};
   final Logger logger = Logger();
   bool isSelectionMode = false;
+  bool allSelected = false;
 
+  late AnimationController animationController;
   @override
   void initState() {
     super.initState();
-    _loadImages();
+    animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    loadImages();
   }
 
-  Future<void> _loadImages() async {
-    final directory = await getTemporaryDirectory();
-    final List<FileSystemEntity> files = directory.listSync();
+  @override
+  void dispose() {
+    animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadImages() async {
+    final tempdir = await getTemporaryDirectory();
+    final List<FileSystemEntity> files = tempdir.listSync();
     final List<File> tempImages = files
         .where((file) => file.path.endsWith('.png'))
         .map((file) => File(file.path))
-        .toList();
+        .toList()
+      ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
     setState(() {
+      // images!.addAll(tempImages);
       images = tempImages;
     });
+    List kokot = [];
+    for (int i = 0; i < images!.length; i++) {
+      kokot.add('${i + 1} ${images![i]} ${images![i].lastModifiedSync()}');
+    }
+    logger.d(kokot);
   }
 
-  void _deleteSelected() async {
+  void deleteSelected() async {
     // Delete files
-    for (int index in selectedIndices) {
-      await images![index].delete();
-      logger.d('Deleted ${images![index].path}');
+    for (int i in selectedIndices) {
+      await images![i].delete();
+      setState(() {
+        isSelectionMode = false;
+      });
     }
 
     // Remove from list
@@ -54,10 +76,11 @@ class _GalleryScreenState extends State<GalleryScreen> {
       }
       images = remainingImages;
       selectedIndices.clear();
+      loadImages();
     });
   }
 
-  void _showFullScreenImage(File image, BuildContext context) {
+  void showFullScreenImage(File image, BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -79,20 +102,24 @@ class _GalleryScreenState extends State<GalleryScreen> {
       appBar: AppBar(
         title: Text('Gallery'),
         actions: [
-          if (isSelectionMode)
-            IconButton(
-              icon: Icon(Icons.close),
-              onPressed: () {
-                setState(() {
-                  isSelectionMode = false;
-                  selectedIndices.clear();
-                });
-              },
-            ),
-          if (selectedIndices.isNotEmpty)
+          if (isSelectionMode && selectedIndices.isNotEmpty)
             IconButton(
               icon: Icon(Icons.delete),
-              onPressed: _deleteSelected,
+              onPressed: deleteSelected,
+            ),
+          if (isSelectionMode)
+            IconButton(
+              icon: Icon(Icons.select_all),
+              onPressed: () {
+                setState(() {
+                  allSelected = selectedIndices.length != images!.length;
+                  for (int i = 0; i < images!.length; i++) {
+                    allSelected
+                        ? selectedIndices.add(i)
+                        : selectedIndices.remove(i);
+                  }
+                });
+              },
             ),
         ],
       ),
@@ -118,16 +145,12 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   setState(() {
                     if (selectedIndices.contains(index)) {
                       selectedIndices.remove(index);
-                      // Exit selection mode if no images are selected
-                      if (selectedIndices.isEmpty) {
-                        isSelectionMode = false;
-                      }
                     } else {
                       selectedIndices.add(index);
                     }
                   });
                 } else {
-                  _showFullScreenImage(images![index], context);
+                  showFullScreenImage(images![index], context);
                 }
               },
               onLongPress: () {
@@ -135,29 +158,75 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   if (!isSelectionMode) {
                     isSelectionMode = true;
                     selectedIndices.add(index);
+                  } else {
+                    showFullScreenImage(images![index], context);
                   }
                 });
               },
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.file(
-                    images![index],
-                    fit: BoxFit.cover,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    margin: isSelectionMode
+                        ? const EdgeInsets.all(2)
+                        : EdgeInsets.zero,
+                    child: Image.file(
+                      images![index],
+                      filterQuality: FilterQuality.none,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  if (selectedIndices.contains(index))
-                    Container(
-                      color: Colors.blue.withOpacity(0.2),
-                      child: Text(
-                        '${selectedIndices.toList().indexOf(index) + 1}',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                  if (isSelectionMode)
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      top: 8,
+                      right: 8,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.rectangle,
+                          color: selectedIndices.contains(index)
+                              ? Theme.of(context).primaryColor
+                              : Colors.white,
+                          border: Border.all(
+                            color: selectedIndices.contains(index)
+                                ? Colors.transparent
+                                : Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: selectedIndices.contains(index)
+                                ? FittedBox(
+                                    key: ValueKey('number_$index'),
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '${selectedIndices.toList().indexOf(index) + 1}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.check,
+                                    key: ValueKey('check_$index'),
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                          ),
                         ),
                       ),
-                    )
+                    ),
                 ],
               ),
             );
@@ -166,7 +235,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          if (isSelectionMode) {
+          if (isSelectionMode && selectedIndices.isNotEmpty) {
             final selectedPhotos =
                 selectedIndices.map((index) => images![index]).toList();
 
@@ -174,24 +243,32 @@ class _GalleryScreenState extends State<GalleryScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => TypeSelectScreen(selectedPhotos: selectedPhotos,), // Create this screen
+                builder: (context) => ExportSelectScreen(
+                  selectedPhotos: selectedPhotos,
+                ),
               ),
             );
           } else {
-            final pickedFile =
-                await ImagePicker().pickImage(source: ImageSource.gallery);
-            if (pickedFile != null) {
+            final pickedFiles = await ImagePicker().pickMultiImage();
+            if (pickedFiles.isNotEmpty) {
               final directory = await getTemporaryDirectory();
-              final newPath = join(directory.path,
-                  '${DateTime.now().millisecondsSinceEpoch}.png');
-              final newFile = await File(pickedFile.path).copy(newPath);
+              int i = 0;
+              for (final xFile in pickedFiles) {
+                final newPath = join(directory.path,
+                    'imgPick-${DateTime.now().millisecondsSinceEpoch}$i.png');
+                  await File(xFile.path).copy(newPath);
+                  i++;                
+              }
+              logger.d(i);
               setState(() {
-                images!.add(newFile);
+                loadImages();
               });
             }
           }
         },
-        child: Icon(isSelectionMode ? Icons.save : Icons.add),
+        child: Icon(isSelectionMode && selectedIndices.isNotEmpty
+            ? Icons.save
+            : Icons.add),
       ),
     );
   }
