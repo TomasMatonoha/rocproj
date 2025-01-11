@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:dev1/gallery/export_select_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -5,6 +7,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:logger/logger.dart';
+import 'dart:typed_data';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
@@ -16,6 +19,7 @@ class GalleryScreen extends StatefulWidget {
 class GalleryScreenState extends State<GalleryScreen>
     with TickerProviderStateMixin {
   List<File>? images = [];
+  List<Uint8List>? lowResImages = [];
   Set<int> selectedIndices = {};
   final Logger logger = Logger();
   bool isSelectionMode = false;
@@ -46,15 +50,26 @@ class GalleryScreenState extends State<GalleryScreen>
         .map((file) => File(file.path))
         .toList()
       ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-    setState(() {
-      // images!.addAll(tempImages);
-      images = tempImages;
-    });
-    List kokot = [];
-    for (int i = 0; i < images!.length; i++) {
-      kokot.add('${i + 1} ${images![i]} ${images![i].lastModifiedSync()}');
+    
+    final List<Uint8List> tempLowResImages = [];
+    for (final image in tempImages) {
+      final bytes = await image.readAsBytes();
+      final codec = await instantiateImageCodec(bytes, targetWidth: 100, targetHeight: 100);
+      final frame = await codec.getNextFrame();
+      final lowResBytes = (await frame.image.toByteData(format: ImageByteFormat.png))!.buffer.asUint8List();
+      tempLowResImages.add(lowResBytes);
     }
-    logger.d(kokot);
+
+    setState(() {
+      images = tempImages;
+      lowResImages = tempLowResImages;
+    });
+
+    List loggerList = [];
+    for (int i = 0; i < images!.length; i++) {
+      loggerList.add('${i + 1} ${images![i]}');
+    }
+    logger.d(loggerList);
   }
 
   void deleteSelected() async {
@@ -107,11 +122,12 @@ class GalleryScreenState extends State<GalleryScreen>
               icon: Icon(Icons.delete),
               onPressed: deleteSelected,
             ),
-          if (isSelectionMode)
+          if (images!.isNotEmpty)
             IconButton(
               icon: Icon(Icons.select_all),
               onPressed: () {
                 setState(() {
+                  isSelectionMode = true;
                   allSelected = selectedIndices.length != images!.length;
                   for (int i = 0; i < images!.length; i++) {
                     allSelected
@@ -172,8 +188,8 @@ class GalleryScreenState extends State<GalleryScreen>
                     margin: isSelectionMode
                         ? const EdgeInsets.all(2)
                         : EdgeInsets.zero,
-                    child: Image.file(
-                      images![index],
+                    child: Image.memory(
+                      lowResImages![index],
                       filterQuality: FilterQuality.none,
                       fit: BoxFit.cover,
                     ),
@@ -256,10 +272,9 @@ class GalleryScreenState extends State<GalleryScreen>
               for (final xFile in pickedFiles) {
                 final newPath = join(directory.path,
                     'imgPick-${DateTime.now().millisecondsSinceEpoch}$i.png');
-                  await File(xFile.path).copy(newPath);
-                  i++;                
+                await File(xFile.path).copy(newPath);
+                i++;
               }
-              logger.d(i);
               setState(() {
                 loadImages();
               });

@@ -1,126 +1,141 @@
 import 'package:image/image.dart' as img;
-import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'dart:math' as math;
 import 'package:logger/logger.dart';
 
-class ImageProcessor {
-  static const int maxDimension = 2080;
-  static const int minDimension = 500;
-  late img.Image? image;
-  late String path;
-  late File editedOcrFile;
-  late img.Image? originalImage;
-  Logger logger = Logger();
 
-  Future<void> loadImage(String imagePath) async {
+class ImageProcessor {
+  static const int _maxResolution = 1080 * 1080;
+  static const int _minResolution = 500 * 500;
+  late img.Image? _image;
+  late String path;
+  final logger = Logger();
+
+  Future<void> loadImage(final String imagePath) async {
     final file = File(imagePath);
     final bytes = await file.readAsBytes();
-    image = img.decodeImage(bytes);
+    _image = img.decodeImage(bytes);
     path = imagePath;
-    originalImage = img.copyResize(image!, width: image!.width, height: image!.height);
-    logger.d('IMGPROC: Loaded image $image from $path');
   }
 
+  // resizes, if too small returns false
   bool enforceSizeLimits() {
-    int width = image!.width;
-    int height = image!.height;
+    final int resolution = _image!.width * _image!.height;
+    final double scale = _maxResolution / resolution;
+    final desiredWidth = (_image!.width * scale).round();
+    final desiredHeight = (_image!.height * scale).round();
 
     // image too large - resize for less memory usage
-    if (width > maxDimension || height > maxDimension) {
-      double scale = maxDimension / math.max(width, height);
-      width = (width * scale).round();
-      height = (height * scale).round();
-      image = img.copyResize(image!, width: width, height: height);
-      logger.d('IMGPROC: Resized image to $width x $height');
+    if (resolution > _maxResolution) {
+      _image =
+          img.copyResize(_image!, width: desiredWidth, height: desiredHeight);
+      //logger.d('IMGPROC: Resized image to $desiredWidth x $desiredHeight');
       return true;
     }
     // image too small - reject
-    if (width < minDimension || height < minDimension) {
-      logger.e('IMGPROC: Image $path too small');
+    if (resolution < _minResolution) {
+      //logger.e('IMGPROC: Image $path too small');
       return false;
     }
+    // image was within limits already
+    //logger.d('IMGPROC: Image $image within limits : $resolution | $minResolution <-> $maxResolution');
+
     return true;
   }
 
   void convertToGrayscale() {
-    image = img.grayscale(image!);
+    _image = img.grayscale(_image!);
   }
 
   void reduceNoise() {
-    image = img.gaussianBlur(image!, radius: 1);
+    _image = img.gaussianBlur(_image!, radius: 1);
   }
 
   void applyThreshold(int threshold) {
-    image = img.luminanceThreshold(image!, threshold: threshold);
+    _image = img.luminanceThreshold(_image!, threshold: threshold);
   }
 
   void adjustBrightness(double factor) {
-    image = img.adjustColor(
-      image!,
+    _image = img.adjustColor(
+      _image!,
       brightness: factor,
     );
   }
 
   void adjustContrast(double factor) {
-    image = img.adjustColor(
-      image!,
+    _image = img.adjustColor(
+      _image!,
       contrast: factor,
     );
   }
 
   void optimizeForOCR() {
-    if (!enforceSizeLimits()) {
-      throw Exception('Image too small');
-    }
+    if (!enforceSizeLimits()) return;
     adjustBrightness(0.5);
     adjustContrast(0.5);
     reduceNoise();
     convertToGrayscale();
     reduceNoise();
-    logger.d('IMPROC: Optimized image for OCR');
+    //logger.d('IMPROC: Optimized image for OCR');
   }
 
-  Future<void> save() async {
-    final dirname = p.dirname(path);
+  Future<void> save(final String path) async {
+/*     final dirname = p.dirname(path);
     final filename = p.basename(path);
-    await Directory('$dirname/OCR-Edited').create();
-    final bytes = img.encodeJpg(image!);
-    // editedOcrFile = '$dirname/OCR-Edited/e-$filename';
-    editedOcrFile = File('$dirname/OCR-Edited/e-$filename');
-    await editedOcrFile.writeAsBytes(bytes);
-    logger.d('IMPROC: Saved image $image to ${editedOcrFile.path}');
+
+    await Directory(dirname).create(); */
+    try {
+      if (!Directory(p.dirname(path)).existsSync()) {
+        Directory(p.dirname(path)).createSync(recursive: true);
+      }
+      var imgprocSavedFile = File(path);
+      final bytes = img.encodeJpg(_image!);
+      await imgprocSavedFile.writeAsBytes(bytes);
+      //logger.d('IMPROC: Saved image $image to ${imgprocSavedFile.path}');
+    } catch (e) {
+      logger.e('IMPROC: Error saving image: $e');
+    }
   }
 
   Future<void> dispose() async {
-    image = null;
-    path = '';
-    editedOcrFile.delete();
-    originalImage = null;
-    logger.d('IMPROC: Image processor disposed');
+    _image = null;
+    final directory = Directory(p.dirname(path));
+    if (await directory.exists()) {
+      final subDirectories =
+          directory.listSync().whereType<Directory>().toList();
+      List loggerList = [];
+      int i = 0;
+      for (var dir in subDirectories) {
+        await dir.delete(recursive: true);
+        loggerList.add('${i++} $dir\n');
+      }
+      logger.d('IMPROC: Deleted directories: \n$loggerList');
+      path = '';
+      //logger.d('IMPROC: Image processor disposed');
+    }
   }
 }
 
 class Ocr {
-  final textDetector = TextRecognizer();
+  final _textDetector = TextRecognizer();
   final Logger logger = Logger();
 
-  Future<String> extractText(String imagePath) async {
+  Future<String> extractText(final String imagePath) async {
     try {
       final inputImage = InputImage.fromFilePath(imagePath);
-      final RecognizedText recognizedText =
-          await textDetector.processImage(inputImage);
+      final recognizedText =
+          await _textDetector.processImage(inputImage);
       String text = '';
       for (TextBlock block in recognizedText.blocks) {
-         text += '${block.text}\n';
+        text += '${block.text}\n';
         /* for (TextLine line in block.lines) {
           text += '${line.text}\n';
         } */
       }
       // return _postProcessText(text);
-      logger.d('OCR text: \n$text');
-      return text != '' ? text : 'No text found';
+      //logger.d('OCR text: \n$text');
+      return (text != '') ? text : 'No text found';
     } catch (e) {
       logger.e('OCR error: $e');
       return '';
@@ -136,7 +151,7 @@ class Ocr {
   } */
 
   Future<void> dispose() async {
-    await textDetector.close();
-    logger.d('Text detector disposed');
+    await _textDetector.close();
+    //logger.d('Text detector disposed');
   }
 }
