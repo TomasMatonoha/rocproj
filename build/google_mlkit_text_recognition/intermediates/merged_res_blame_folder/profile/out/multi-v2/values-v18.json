@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.google_mlkit_text_recognition-merged_res-32:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "/home/marek/.gradle/caches/transforms-3/8b51bb040b32a2abc8f296afdae29f34/transformed/appcompat-1.6.1/res/values-v18/values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.google_mlkit_text_recognition-mergeProfileResources-30:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "/home/marek/.gradle/caches/transforms-3/8b51bb040b32a2abc8f296afdae29f34/transformed/appcompat-1.6.1/res/values-v18/values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        }
+    ]
+}

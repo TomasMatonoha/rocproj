@@ -1,0 +1,3 @@
+/home/marek/project/dev1/build/linux/x64/debug/pdfium-download/CMakeFiles/pdfium-download.dir
+/home/marek/project/dev1/build/linux/x64/debug/pdfium-download/CMakeFiles/edit_cache.dir
+/home/marek/project/dev1/build/linux/x64/debug/pdfium-download/CMakeFiles/rebuild_cache.dir
