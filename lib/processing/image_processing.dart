@@ -2,7 +2,6 @@ import 'package:image/image.dart' as img;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:logger/logger.dart';
 
 
 class ImageProcessor {
@@ -10,7 +9,6 @@ class ImageProcessor {
   static const int _minResolution = 500 * 500;
   late img.Image? _image;
   late String path;
-  final logger = Logger();
 
   Future<void> loadImage(final String imagePath) async {
     final file = File(imagePath);
@@ -85,7 +83,6 @@ class ImageProcessor {
     final filename = p.basename(path);
 
     await Directory(dirname).create(); */
-    try {
       if (!Directory(p.dirname(path)).existsSync()) {
         Directory(p.dirname(path)).createSync(recursive: true);
       }
@@ -93,9 +90,7 @@ class ImageProcessor {
       final bytes = img.encodeJpg(_image!);
       await imgprocSavedFile.writeAsBytes(bytes);
       //logger.d('IMPROC: Saved image $image to ${imgprocSavedFile.path}');
-    } catch (e) {
-      logger.e('IMPROC: Error saving image: $e');
-    }
+    
   }
 
   Future<void> dispose() async {
@@ -107,10 +102,9 @@ class ImageProcessor {
       List loggerList = [];
       int i = 0;
       for (var dir in subDirectories) {
-        await dir.delete(recursive: true);
+        //await dir.delete(recursive: true);
         loggerList.add('${i++} $dir\n');
       }
-      logger.d('IMPROC: Deleted directories: \n$loggerList');
       path = '';
       //logger.d('IMPROC: Image processor disposed');
     }
@@ -119,7 +113,6 @@ class ImageProcessor {
 
 class Ocr {
   final _textDetector = TextRecognizer();
-  final Logger logger = Logger();
 
   Future<String> extractText(final String imagePath) async {
     try {
@@ -137,7 +130,6 @@ class Ocr {
       //logger.d('OCR text: \n$text');
       return (text != '') ? text : 'No text found';
     } catch (e) {
-      logger.e('OCR error: $e');
       return '';
     }
   }

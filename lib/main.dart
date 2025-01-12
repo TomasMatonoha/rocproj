@@ -1,7 +1,8 @@
+
+
+import 'package:dev1/gallery/gallery_screen.dart';
 import 'package:flutter/material.dart';
-import 'homepage.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,11 +12,9 @@ void main() async {
 
 Future<void> _clearTempDirectory() async {
   final directory = await getTemporaryDirectory();
-  final List<FileSystemEntity> files = directory.listSync();
-  for (var file in files) {
-    if (file is File) {
-      await file.delete();
-    }
+  final items = directory.listSync();
+  for (var item in items) {
+       item.deleteSync(recursive: true);
   }
 }
 
@@ -29,7 +28,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(),
+      home: const GalleryScreen(),
     );
   }
 }

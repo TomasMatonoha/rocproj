@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
-import 'package:logger/logger.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -14,8 +13,8 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   CameraController? controller;
   List<CameraDescription>? cameras;
-  final Logger logger = Logger();
   bool _cameraError = false;
+  bool _loading = false;
 
   @override
   void initState() {
@@ -25,7 +24,7 @@ class _CameraScreenState extends State<CameraScreen> {
       if (cameras!.isNotEmpty) {
         controller = CameraController(
           cameras![0],
-          ResolutionPreset.high,
+          ResolutionPreset.max,
           enableAudio: false,
         );
         controller!.initialize().then((_) {
@@ -34,7 +33,6 @@ class _CameraScreenState extends State<CameraScreen> {
           }
           setState(() {});
         }).catchError((e) {
-          logger.e('Error initializing camera: $e');
           setState(() {
             _cameraError = true;
           });
@@ -45,7 +43,6 @@ class _CameraScreenState extends State<CameraScreen> {
         });
       }
     }).catchError((e) {
-      logger.e('Error fetching cameras: $e');
       setState(() {
         _cameraError = true;
       });
@@ -60,19 +57,13 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> takePicture() async {
     if (controller == null || !controller!.value.isInitialized) {
-      logger.e('Camera controller is not initialized');
       return;
     }
-    try {
       final directory = await getTemporaryDirectory();
       final path = join(directory.path,
           'appCam-${DateTime.now().millisecond}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.png');
       final XFile picture = await controller!.takePicture();
       await picture.saveTo(path);
-      logger.d('Picture saved to $path');
-    } catch (e) {
-      logger.e('Error taking picture: $e');
-    }
   }
 
   @override
@@ -91,15 +82,20 @@ class _CameraScreenState extends State<CameraScreen> {
       return Center(child: CircularProgressIndicator());
     }
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Take a Picture'),
-      ),
       body: Center(
-        child: CameraPreview(controller!),
+        child: _loading ?
+            CircularProgressIndicator() : 
+        CameraPreview(controller!),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          setState(() {
+            _loading = true;
+          });
           await takePicture();
+          setState(() {
+            _loading = false;
+          });
         },
         child: Icon(Icons.camera),
       ),
