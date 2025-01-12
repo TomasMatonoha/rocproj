@@ -1,12 +1,12 @@
 import 'dart:ui';
-
-import 'package:dev1/gallery/export_select_screen.dart';
+import 'package:dev1/camera/camera_screen.dart';
+import 'package:dev1/gallery/export_loading.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
-import 'package:logger/logger.dart';
 import 'dart:typed_data';
 
 class GalleryScreen extends StatefulWidget {
@@ -18,16 +18,15 @@ class GalleryScreen extends StatefulWidget {
 
 class GalleryScreenState extends State<GalleryScreen>
     with TickerProviderStateMixin {
-  List<File>? images = [];
+  List<File> images = [];
   List<Uint8List>? lowResImages = [];
   Set<int> selectedIndices = {};
-  final Logger logger = Logger();
   bool isSelectionMode = false;
   bool allSelected = false;
 
   late AnimationController animationController;
   @override
-  void initState() {
+  void initState(){
     super.initState();
     animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -42,6 +41,67 @@ class GalleryScreenState extends State<GalleryScreen>
     super.dispose();
   }
 
+  Future<String?> _getUserInputForOutputPath() async {
+    String? outputPath;
+    var result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select output directory',
+    );
+    result != null ? outputPath = result : null;
+    return outputPath;
+  }
+
+  Future<String?> _fileTypeSelectionDialog(BuildContext context) async {
+    String? fileType;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Center(child: Text('Select File Type')),
+              content: Center(
+                heightFactor: 1.5,
+                child: DropdownMenu<String>(
+                  dropdownMenuEntries: <String>[
+                    'PDF',
+                    'EPUB',
+                  ].map<DropdownMenuEntry<String>>((String value) {
+                    return DropdownMenuEntry<String>(
+                      value: value,
+                      label: value,
+                    );
+                  }).toList(),
+                  onSelected: (String? newValue) {
+                    setState(() {
+                      fileType = newValue;
+                    });
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    fileType = null;
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: fileType == null 
+                    ? null 
+                    : () => Navigator.pop(context),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+    return fileType;
+  }
+
   Future<void> loadImages() async {
     final tempdir = await getTemporaryDirectory();
     final List<FileSystemEntity> files = tempdir.listSync();
@@ -50,13 +110,17 @@ class GalleryScreenState extends State<GalleryScreen>
         .map((file) => File(file.path))
         .toList()
       ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-    
+
     final List<Uint8List> tempLowResImages = [];
     for (final image in tempImages) {
       final bytes = await image.readAsBytes();
-      final codec = await instantiateImageCodec(bytes, targetWidth: 100, targetHeight: 100);
+      final codec = await instantiateImageCodec(bytes,
+          targetWidth: 100, targetHeight: 100);
       final frame = await codec.getNextFrame();
-      final lowResBytes = (await frame.image.toByteData(format: ImageByteFormat.png))!.buffer.asUint8List();
+      final lowResBytes =
+          (await frame.image.toByteData(format: ImageByteFormat.png))!
+              .buffer
+              .asUint8List();
       tempLowResImages.add(lowResBytes);
     }
 
@@ -66,16 +130,16 @@ class GalleryScreenState extends State<GalleryScreen>
     });
 
     List loggerList = [];
-    for (int i = 0; i < images!.length; i++) {
-      loggerList.add('${i + 1} ${images![i]}');
+    for (int i = 0; i < images.length; i++) {
+      loggerList.add('${i + 1} ${images[i]}');
     }
-    logger.d(loggerList);
   }
 
   void deleteSelected() async {
     // Delete files
+    if (selectedIndices.isEmpty) return;
     for (int i in selectedIndices) {
-      await images![i].delete();
+      await images[i].delete();
       setState(() {
         isSelectionMode = false;
       });
@@ -84,9 +148,9 @@ class GalleryScreenState extends State<GalleryScreen>
     // Remove from list
     setState(() {
       List<File> remainingImages = [];
-      for (int i = 0; i < images!.length; i++) {
+      for (int i = 0; i < images.length; i++) {
         if (!selectedIndices.contains(i)) {
-          remainingImages.add(images![i]);
+          remainingImages.add(images[i]);
         }
       }
       images = remainingImages;
@@ -115,21 +179,34 @@ class GalleryScreenState extends State<GalleryScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Gallery'),
+        title: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.asset(
+            'lib/icons/icon.png',
+            height: 35,
+          ),
+        ),
+        backgroundColor: Colors.grey[200],
         actions: [
-          if (isSelectionMode && selectedIndices.isNotEmpty)
-            IconButton(
+          AnimatedOpacity(
+            opacity: (isSelectionMode && selectedIndices.isNotEmpty) ? 1 : 0.5,
+            duration: const Duration(milliseconds: 200),
+            child: IconButton(
               icon: Icon(Icons.delete),
               onPressed: deleteSelected,
             ),
-          if (images!.isNotEmpty)
-            IconButton(
+          ),
+          AnimatedOpacity(
+            opacity: images.isEmpty ? 0.5 : 1,
+            duration: const Duration(milliseconds: 200),
+            child: IconButton(
               icon: Icon(Icons.select_all),
               onPressed: () {
                 setState(() {
+                  if (images.isEmpty) return;
                   isSelectionMode = true;
-                  allSelected = selectedIndices.length != images!.length;
-                  for (int i = 0; i < images!.length; i++) {
+                  allSelected = selectedIndices.length != images.length;
+                  for (int i = 0; i < images.length; i++) {
                     allSelected
                         ? selectedIndices.add(i)
                         : selectedIndices.remove(i);
@@ -137,133 +214,166 @@ class GalleryScreenState extends State<GalleryScreen>
                 });
               },
             ),
+          ),
         ],
       ),
-      body: PopScope(
-        canPop: !isSelectionMode,
-        onPopInvokedWithResult: (didPop, dynamic result) {
-          if (!didPop) {
-            setState(() {
-              isSelectionMode = false;
-              selectedIndices.clear();
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanUpdate: (details) {
+          if (details.delta.dx > 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CameraScreen()),
+            ).then((_){
+              loadImages();
             });
           }
         },
-        child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-          ),
-          itemCount: images!.length,
-          itemBuilder: (context, index) {
-            return GestureDetector(
-              onTap: () {
-                if (isSelectionMode) {
-                  setState(() {
-                    if (selectedIndices.contains(index)) {
-                      selectedIndices.remove(index);
-                    } else {
-                      selectedIndices.add(index);
-                    }
-                  });
-                } else {
-                  showFullScreenImage(images![index], context);
-                }
-              },
-              onLongPress: () {
-                setState(() {
-                  if (!isSelectionMode) {
-                    isSelectionMode = true;
-                    selectedIndices.add(index);
-                  } else {
-                    showFullScreenImage(images![index], context);
+        child: images.isEmpty
+            ? Center(
+                child: Opacity(
+                    opacity: 0.5,
+                    child: Center(
+                        child: Text(
+                            'Add images or take pictures by swiping.'))),
+              )
+            : PopScope(
+                canPop: !isSelectionMode,
+                onPopInvokedWithResult: (didPop, dynamic result) {
+                  if (!didPop) {
+                    setState(() {
+                      isSelectionMode = false;
+                      selectedIndices.clear();
+                    });
                   }
-                });
-              },
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    margin: isSelectionMode
-                        ? const EdgeInsets.all(2)
-                        : EdgeInsets.zero,
-                    child: Image.memory(
-                      lowResImages![index],
-                      filterQuality: FilterQuality.none,
-                      fit: BoxFit.cover,
-                    ),
+                },
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
                   ),
-                  if (isSelectionMode)
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      top: 8,
-                      right: 8,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.rectangle,
-                          color: selectedIndices.contains(index)
-                              ? Theme.of(context).primaryColor
-                              : Colors.white,
-                          border: Border.all(
-                            color: selectedIndices.contains(index)
-                                ? Colors.transparent
-                                : Colors.grey,
-                            width: 2,
-                          ),
-                        ),
-                        child: Center(
-                          child: AnimatedSwitcher(
+                  itemCount: images.length,
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () {
+                        if (isSelectionMode) {
+                          setState(() {
+                            if (selectedIndices.contains(index)) {
+                              selectedIndices.remove(index);
+                            } else {
+                              selectedIndices.add(index);
+                            }
+                          });
+                        } else {
+                          showFullScreenImage(images[index], context);
+                        }
+                      },
+                      onLongPress: () {
+                        setState(() {
+                          if (!isSelectionMode) {
+                            isSelectionMode = true;
+                            selectedIndices.add(index);
+                          } else {
+                            showFullScreenImage(images[index], context);
+                          }
+                        });
+                      },
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            child: selectedIndices.contains(index)
-                                ? FittedBox(
-                                    key: ValueKey('number_$index'),
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      '${selectedIndices.toList().indexOf(index) + 1}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.check,
-                                    key: ValueKey('check_$index'),
-                                    size: 16,
-                                    color: Colors.grey,
-                                  ),
+                            curve: Curves.easeInOut,
+                            margin: isSelectionMode
+                                ? const EdgeInsets.all(2)
+                                : EdgeInsets.zero,
+                            child: Image.memory(
+                              lowResImages![index],
+                              filterQuality: FilterQuality.none,
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                        ),
+                          if (isSelectionMode)
+                            AnimatedPositioned(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              top: 8,
+                              right: 8,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.rectangle,
+                                  color: selectedIndices.contains(index)
+                                      ? Theme.of(context).primaryColor
+                                      : Colors.white,
+                                  border: Border.all(
+                                    color: selectedIndices.contains(index)
+                                        ? Colors.transparent
+                                        : Colors.grey,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: selectedIndices.contains(index)
+                                        ? FittedBox(
+                                            key: ValueKey('number_$index'),
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              '${selectedIndices.toList().indexOf(index) + 1}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.check,
+                                            key: ValueKey('check_$index'),
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                ],
+                    );
+                  },
+                ),
               ),
-            );
-          },
-        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           if (isSelectionMode && selectedIndices.isNotEmpty) {
             final selectedPhotos =
-                selectedIndices.map((index) => images![index]).toList();
-
-            // Navigate or process selected images
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ExportSelectScreen(
-                  selectedPhotos: selectedPhotos,
-                ),
-              ),
-            );
+                selectedIndices.map((index) => images[index]).toList();
+            final outputPath = await _getUserInputForOutputPath();
+            if(outputPath != null && context.mounted) {
+              final filetype = await _fileTypeSelectionDialog(context);
+              if (filetype != null && context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ExportLoadingScreen(
+                      selectedPhotos: selectedPhotos,
+                      outputPath: outputPath,
+                      fileType: filetype,
+                    ),
+                  ),
+                ).then((_) {
+                  setState(() {
+                    isSelectionMode = false;
+                    selectedIndices.clear();
+                  });
+                });
+              }
+            }
           } else {
             final pickedFiles = await ImagePicker().pickMultiImage();
             if (pickedFiles.isNotEmpty) {
