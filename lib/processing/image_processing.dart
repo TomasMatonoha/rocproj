@@ -122,28 +122,16 @@ class Ocr {
       String text = '';
       for (TextBlock block in recognizedText.blocks) {
         text += '${block.text}\n';
-        /* for (TextLine line in block.lines) {
-          text += '${line.text}\n';
-        } */
       }
-      // return _postProcessText(text);
-      //logger.d('OCR text: \n$text');
       return (text != '') ? text : 'No text found';
     } catch (e) {
       return '';
     }
   }
 
-/*   String _postProcessText(String text) {
-    // Remove extra whitespace
-    text = text.replaceAll(RegExp(r'\s+'), ' ');
-    // Trim leading/trailing spaces
-    text = text.trim();
-    return text;
-  } */
+
 
   Future<void> dispose() async {
     await _textDetector.close();
-    //logger.d('Text detector disposed');
   }
 }
