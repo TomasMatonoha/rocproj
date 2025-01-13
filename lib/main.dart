@@ -1,6 +1,6 @@
 
 
-import 'package:dev1/gallery/gallery_screen.dart';
+import 'package:Snap2Doc/gallery/gallery_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Camera Gallery App',
+      title: 'Snap2Doc',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
