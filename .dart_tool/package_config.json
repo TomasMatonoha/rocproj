@@ -518,13 +518,13 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "dev1",
+      "name": "Snap2Doc",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     }
   ],
-  "generated": "2025-01-12T23:35:10.770250Z",
+  "generated": "2025-01-13T11:11:20.430102Z",
   "generator": "pub",
   "generatorVersion": "3.6.0",
   "flutterRoot": "file:///home/marek/flutter",

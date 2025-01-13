@@ -1,6 +1,6 @@
 
 
-import 'package:dev1/gallery/gallery_screen.dart';
+import 'package:Snap2Doc/gallery/gallery_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 

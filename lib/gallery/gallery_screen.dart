@@ -1,6 +1,6 @@
 import 'dart:ui';
-import 'package:dev1/camera/camera_screen.dart';
-import 'package:dev1/gallery/export_loading.dart';
+import 'package:Snap2Doc/camera/camera_screen.dart';
+import 'package:Snap2Doc/gallery/export_loading.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
