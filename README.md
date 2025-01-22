@@ -19,8 +19,8 @@ Tato aplikace je skvělým pomocníkem všem čtenářům e-knih, kteří jsou f
 ---
 
 ## Technologie
-- **Flutter - ** moderní open-source framework od Googlu, který umožňuje rychlý vývoj krásných, nativně působících aplikací pro různé platformy z jednoho kódu.
-- **Google ML Kit - ** výkonný nástroj pro přesné rozpoznávání textu z obrázků, který podporuje více jazyků, funguje offline a je snadno integrovatelný do mobilních aplikací.
+- **Flutter -** moderní open-source framework od Googlu, který umožňuje rychlý vývoj krásných, nativně působících aplikací pro různé platformy z jednoho kódu.
+- **Google ML Kit -** výkonný nástroj pro přesné rozpoznávání textu z obrázků, který podporuje více jazyků, funguje offline a je snadno integrovatelný do mobilních aplikací.
 
 ---
 
