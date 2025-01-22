@@ -6,6 +6,8 @@
 
 Tato aplikace je skvělým pomocníkem všem čtenářům e-knih, kteří jsou frustrováni nedostatkem volně dostupného materiálu online. Dovoluje uživateli vyfotit (či dodat z galerie) stránky knih, které následně dokáže převést do digitálního formátu.
 
+---
+
 ## Funkce
 
 - **Import a správa fotografií:** Uživatel může importovat obrázky z galerie nebo je pořizovat vestavěným fotoaparátem. Obrázky lze označit pro další zpracování, hromadně spravovat a mazat.
@@ -13,3 +15,4 @@ Tato aplikace je skvělým pomocníkem všem čtenářům e-knih, kteří jsou f
 - **Ukládání a export:** Hotové dokumenty lze uložit do zvolené složky a vybrat formát exportu, přičemž základním výstupem je PDF.
 - **Optimalizace a výkon:** Aplikace optimalizuje načítání obrázků pomocí miniatur a při spuštění automaticky čistí cache.
 - **Uživatelské rozhraní a ovládání:** Intuitivní menu s animacemi poskytuje snadný přístup ke všem funkcím. Fotoaparát lze rychle otevřít gestem potažení doprava.
+
