@@ -16,3 +16,18 @@ Tato aplikace je skvělým pomocníkem všem čtenářům e-knih, kteří jsou f
 - **Optimalizace a výkon:** Aplikace optimalizuje načítání obrázků pomocí miniatur a při spuštění automaticky čistí cache.
 - **Uživatelské rozhraní a ovládání:** Intuitivní menu s animacemi poskytuje snadný přístup ke všem funkcím. Fotoaparát lze rychle otevřít gestem potažení doprava.
 
+---
+
+## Technologie
+- **Flutter - ** moderní open-source framework od Googlu, který umožňuje rychlý vývoj krásných, nativně působících aplikací pro různé platformy z jednoho kódu.
+- **Google ML Kit - ** výkonný nástroj pro přesné rozpoznávání textu z obrázků, který podporuje více jazyků, funguje offline a je snadno integrovatelný do mobilních aplikací.
+
+---
+
+## Budoucí funkce
+
+Aplikace je stále ve vývoji a tudíž se v brzké době dočkáte vylepšené funkcionality!
+
+#### Mimo jiné například:
+- **Rozžířené možnosti exportu**
+- **Optimalizace zpracování exportu**
