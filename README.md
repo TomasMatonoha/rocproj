@@ -28,6 +28,6 @@ Tato aplikace je skvělým pomocníkem všem čtenářům e-knih, kteří jsou f
 
 Aplikace je stále ve vývoji a tudíž se v brzké době dočkáte vylepšené funkcionality!
 
-#### Mimo jiné například:
+### Mimo jiné například:
 - **Rozžířené možnosti exportu**
 - **Optimalizace zpracování exportu**
